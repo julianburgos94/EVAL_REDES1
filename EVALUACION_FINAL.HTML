@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación - Redes I</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .correct-anim { animation: pulseGreen 0.5s; }
+        .wrong-anim { animation: shakeRed 0.5s; }
+        @keyframes pulseGreen {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        @keyframes shakeRed {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 text-slate-800 font-sans">
+
+    <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full overflow-hidden border border-slate-100">
+        <!-- Header -->
+        <div class="bg-indigo-600 p-6 text-white text-center">
+            <h1 class="text-2xl font-bold mb-1">Módulo 3 - Redes I: Fundamentos</h1>
+            <p class="text-indigo-100 text-sm">Docente: Julián David Burgos Ojeda</p>
+        </div>
+
+        <!-- Pantalla de Inicio -->
+        <div id="start-screen" class="p-8 text-center fade-in">
+            <h2 class="text-xl font-semibold mb-4">¡Bienvenido a tu evaluación!</h2>
+            <p class="text-slate-600 mb-6">Esta prueba consta de <strong>10 preguntas</strong> basadas en los contenidos del módulo. Tendrás <strong>10 minutos</strong> para completarla.</p>
+            <div class="mb-6 text-left max-w-md mx-auto bg-blue-50 p-4 rounded-lg text-blue-800 text-sm">
+                <p class="font-bold mb-2">Instrucciones:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Lee cuidadosamente cada pregunta.</li>
+                    <li>Selecciona una única respuesta correcta.</li>
+                    <li>Al finalizar, enviarás tus resultados directamente al profesor.</li>
+                </ul>
+            </div>
+            <div class="mb-6">
+                <label for="student-name" class="block text-sm font-medium text-slate-700 text-left max-w-md mx-auto mb-1">Tu Nombre Completo:</label>
+                <input type="text" id="student-name" class="w-full max-w-md px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow" placeholder="Ej. Juan Pérez" required>
+                <p id="name-error" class="text-red-500 text-xs text-left max-w-md mx-auto mt-1 hidden">Por favor, ingresa tu nombre para comenzar.</p>
+            </div>
+            <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full transition-colors shadow-md hover:shadow-lg">
+                Comenzar Evaluación
+            </button>
+        </div>
+
+        <!-- Contenedor de la Prueba -->
+        <div id="quiz-screen" class="hidden flex-col p-6 h-full">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
+                <div class="text-sm font-medium text-slate-500">
+                    Pregunta <span id="current-question-num" class="text-indigo-600 font-bold text-lg">1</span> de 10
+                </div>
+                <div class="flex items-center text-rose-600 font-bold bg-rose-50 px-3 py-1 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="timer">10:00</span>
+                </div>
+            </div>
+
+            <!-- Pregunta actual -->
+            <div id="question-container" class="flex-grow fade-in">
+                <h3 id="question-text" class="text-lg font-semibold mb-5 text-slate-800">Cargando pregunta...</h3>
+                <div id="options-container" class="space-y-3">
+                    <!-- Opciones generadas por JS -->
+                </div>
+            </div>
+
+            <!-- Feedback -->
+            <div id="feedback-container" class="hidden mt-6 p-4 rounded-lg text-sm fade-in">
+                <!-- Mensaje de feedback generado por JS -->
+            </div>
+
+            <!-- Botón de control -->
+            <div class="mt-8 flex justify-end">
+                <button id="next-btn" onclick="nextQuestion()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    Siguiente Pregunta
+                </button>
+                <button id="finish-btn" onclick="endQuiz()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                    Finalizar Evaluación
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla de Resultados -->
+        <div id="result-screen" class="hidden p-8 text-center fade-in">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">¡Evaluación Finalizada!</h2>
+            <p id="student-greeting" class="text-slate-600 mb-6"></p>
+            
+            <div class="bg-slate-100 rounded-xl p-6 max-w-sm mx-auto mb-8 border border-slate-200">
+                <p class="text-sm text-slate-500 uppercase tracking-wide font-bold mb-1">Tu Nota Final</p>
+                <div class="text-5xl font-black text-indigo-600 mb-2">
+                    <span id="final-score">0</span><span class="text-2xl text-slate-400">/10</span>
+                </div>
+                <div id="score-message" class="font-medium text-slate-700"></div>
+            </div>
+
+            <button onclick="sendToWhatsApp()" class="w-full sm:w-auto inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full transition-colors shadow-lg hover:shadow-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                Enviar resultados al Profe Julián
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Datos de las preguntas (basadas en el PDF)
+        const questions = [
+            {
+                question: "¿Según la norma TIA/EIA-568, qué velocidades soportan comúnmente los cables UTP Cat5e y Cat6A?",
+                options: [
+                    "Ambas soportan únicamente 1 Gbps.",
+                    "Cat5e soporta hasta 1 Gbps, mientras que Cat6A soporta hasta 10 Gbps.",
+                    "Cat5e soporta 100 Mbps y Cat6A soporta 1 Gbps.",
+                    "Ambas están diseñadas exclusivamente para telefonía análoga."
+                ],
+                correct: 1,
+                correctMsg: "¡Perfecto! Eres un experto. Cat5e es estándar para 1Gbps y Cat6A escala hasta los 10Gbps.",
+                wrongMsg: "Incorrecto. Recuerda que la evolución de las categorías busca mayor velocidad: Cat5e llega a 1Gbps y Cat6/6A están diseñadas para soportar 10Gbps en ciertas distancias."
+            },
+            {
+                question: "¿Cuál es la función principal de la norma TIA-606 en una instalación de redes?",
+                options: [
+                    "Especificar el grosor del cobre en los cables UTP.",
+                    "Definir el código de colores para ponchar los conectores RJ45.",
+                    "Establecer los estándares de administración, etiquetado y documentación de la infraestructura.",
+                    "Medir la atenuación de la fibra óptica monomodo."
+                ],
+                correct: 2,
+                correctMsg: "¡Excelente! El etiquetado y la documentación son clave, y la TIA-606 lo rige perfectamente.",
+                wrongMsg: "Esa no es la respuesta correcta. La TIA-606 es la norma enfocada específicamente en la administración (etiquetas, colores de identificación, planos as-built)."
+            },
+            {
+                question: "¿Qué es la diafonía (crosstalk) en un enlace de cobre?",
+                options: [
+                    "La interferencia electromagnética (EMI) generada por motores externos o luces fluorescentes.",
+                    "La pérdida gradual de la potencia de la señal a medida que viaja por la distancia del cable.",
+                    "La interferencia que ocurre cuando la señal de un par de hilos se acopla o interfiere en otro par adyacente dentro del mismo cable.",
+                    "El doblaje excesivo del cable que supera su radio de curvatura."
+                ],
+                correct: 2,
+                correctMsg: "¡Muy bien! Tienes los conceptos claros. El trenzado de los cables ayuda a evitar precisamente esto.",
+                wrongMsg: "¡Te equivocaste de concepto! La diafonía (crosstalk) es un 'ruido interno', donde la señal de un par se cruza con otro par vecino. Lo que viene de afuera es EMI, y la pérdida de fuerza es atenuación."
+            },
+            {
+                question: "En una instalación de fibra óptica, ¿qué herramienta utilizarías para encontrar roturas a lo largo del cable y certificar el enlace?",
+                options: [
+                    "Certificador de cobre",
+                    "OTDR (Reflectómetro Óptimo en el Dominio del Tiempo)",
+                    "Pelacables de precisión",
+                    "Crimpadora"
+                ],
+                correct: 1,
+                correctMsg: "¡Genial! El OTDR es el equipo rey para auditar e inspeccionar los hilos de fibra óptica.",
+                wrongMsg: "No es correcto. El OTDR (Optical Time Domain Reflectometer) es el dispositivo que lanza pulsos de luz para detectar fallas, empalmes y certificar la fibra óptica."
+            },
+            {
+                question: "¿Qué sucede si NO se respeta el radio de curvatura de un cable (se dobla demasiado) durante la instalación?",
+                options: [
+                    "El cable se calienta pero la transmisión de datos se acelera.",
+                    "Absolutamente nada, los cables UTP y la fibra óptica modernos son extremadamente flexibles.",
+                    "Se altera la geometría interna del cable, provocando microcurvaturas, atenuación severa o pérdida total de la señal.",
+                    "El etiquetado TIA-606 pierde validez, pero la red funciona igual."
+                ],
+                correct: 2,
+                correctMsg: "¡Así se habla, futuro instalador! Cuidar el medio físico es fundamental para garantizar el rendimiento.",
+                wrongMsg: "Cuidado con eso en la vida real. Doblar o estrangular el cable altera su estructura física y degrada gravemente la señal (aumenta atenuación) o parte los hilos en el caso de la fibra."
+            },
+            {
+                question: "Comparando un empalme mecánico con un empalme por fusión en fibra óptica, ¿cuál es la característica principal de la fusión?",
+                options: [
+                    "Ofrece la menor pérdida de señal y mayor durabilidad, aunque el equipo (fusionadora) es más costoso.",
+                    "Es el método más barato y rápido que no requiere herramientas especiales.",
+                    "Produce una mayor pérdida de atenuación que el empalme mecánico.",
+                    "Solo se puede utilizar para distancias menores a 100 metros en redes LAN."
+                ],
+                correct: 0,
+                correctMsg: "¡Correcto! La fusión literalmente 'derrite' y une el cristal, dejando el hilo casi perfecto.",
+                wrongMsg: "Respuesta incorrecta. La fusión utiliza un arco eléctrico para unir los cristales, lo que garantiza una pérdida de señal mínima (casi nula) y gran resistencia, aunque la máquina fusionadora sea costosa."
+            },
+            {
+                question: "Al certificar un cable de cobre, el parámetro ACR (Attenuation to Crosstalk Ratio) significa:",
+                options: [
+                    "La medida de pérdida de retorno de la señal cuando choca con un conector.",
+                    "La relación o margen que existe entre la atenuación de la señal y el ruido por diafonía (NEXT).",
+                    "El límite máximo de distancia que puede recorrer un cable sin repetidor.",
+                    "La resistencia física del revestimiento exterior contra incendios."
+                ],
+                correct: 1,
+                correctMsg: "¡Excelente nivel de detalle! El ACR nos dice qué tan 'fuerte' llega la señal útil comparada con el ruido interno.",
+                wrongMsg: "Recuerda la traducción: ACR = Relación (Ratio) entre la Atenuación y la Diafonía (Crosstalk). Mide el ancho de banda efectivo de un canal."
+            },
+            {
+                question: "CASO PRÁCTICO: Para conectar el Cuarto de Telecomunicaciones principal con otro cuarto en un piso distinto (conexión vertical/backbone) a 10 Gbps, ¿qué medio es el más recomendado?",
+                options: [
+                    "Cable Coaxial RG6.",
+                    "Fibra Óptica (preferiblemente Multimodo o Monomodo según distancia).",
+                    "Cable Telefónico estándar de 4 hilos.",
+                    "Cable UTP Cat5e."
+                ],
+                correct: 1,
+                correctMsg: "¡Resolviste el caso como todo un profesional! Fibra óptica es el estándar oro para el Backbone.",
+                wrongMsg: "Para backbones verticales (entre pisos) de alta velocidad (10Gbps) e inmunes a interferencias electromagnéticas (EMI), la Fibra Óptica es siempre la opción normativa y recomendada."
+            },
+            {
+                question: "Para garantizar la seguridad profesional durante trabajos en alturas (como instalación de bandejas o cableado en techos), ¿cuál es el Equipo de Protección Personal (EPP) indispensable?",
+                options: [
+                    "Manilla antiestática y guantes de látex.",
+                    "Casco, arnés de seguridad, eslingas y botas antideslizantes.",
+                    "Exclusivamente gafas de seguridad y tapones para oídos.",
+                    "Ropa de trabajo cómoda y tenis deportivos."
+                ],
+                correct: 1,
+                correctMsg: "¡Muy bien! La seguridad es lo primero. Siempre se deben usar los equipos adecuados para prevenir caídas y accidentes.",
+                wrongMsg: "Incorrecto. Para trabajos en alturas, el riesgo de caída es crítico, por lo que el arnés de cuerpo entero, casco y botas son obligatorios por norma."
+            },
+            {
+                question: "Al finalizar un proyecto de cableado estructurado, ¿qué es un plano 'as-built' y por qué es importante entregarlo al cliente?",
+                options: [
+                    "Es el presupuesto inicial que se aprueba antes de comprar los materiales.",
+                    "Es un manual genérico descargado de internet sobre cómo armar conectores RJ45.",
+                    "Es el certificado que emite el OTDR al medir y certificar los hilos de la fibra óptica.",
+                    "Es el plano definitivo que muestra exactamente cómo quedó construida e instalada la red real."
+                ],
+                correct: 3,
+                correctMsg: "¡Excelente! Entregar los planos 'as-built' (tal como se construyó) demuestra profesionalismo y es vital para futuras expansiones y mantenimientos.",
+                wrongMsg: "¡Te equivocaste! El plano 'as-built' es la representación gráfica real y final de la red una vez terminada, que documenta todas las rutas y puntos exactos."
+            }
+        ];
+
+        // Variables de estado
+        let currentQuestion = 0;
+        let score = 0;
+        let timeLeft = 10 * 60; // 10 minutos en segundos
+        let timerInterval;
+        let studentName = "";
+
+        // Elementos del DOM
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const studentNameInput = document.getElementById('student-name');
+        const nameError = document.getElementById('name-error');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const currentQuestionNum = document.getElementById('current-question-num');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const nextBtn = document.getElementById('next-btn');
+        const finishBtn = document.getElementById('finish-btn');
+        const timerDisplay = document.getElementById('timer');
+
+        function startQuiz() {
+            studentName = studentNameInput.value.trim();
+            if(studentName === "") {
+                nameError.classList.remove('hidden');
+                return;
+            }
+            nameError.classList.add('hidden');
+            
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            quizScreen.classList.add('flex');
+            
+            startTimer();
+            loadQuestion();
+        }
+
+        function startTimer() {
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endQuiz();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            if(timeLeft < 60) {
+                timerDisplay.classList.remove('text-rose-600');
+                timerDisplay.classList.add('text-red-600', 'animate-pulse');
+            }
+        }
+
+        function loadQuestion() {
+            // Reiniciar UI
+            feedbackContainer.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            finishBtn.classList.add('hidden');
+            optionsContainer.innerHTML = '';
+            
+            const q = questions[currentQuestion];
+            currentQuestionNum.textContent = currentQuestion + 1;
+            questionText.textContent = q.question;
+
+            // Animar entrada
+            const qContainer = document.getElementById('question-container');
+            qContainer.classList.remove('fade-in');
+            void qContainer.offsetWidth; // trigger reflow
+            qContainer.classList.add('fade-in');
+
+            // Crear opciones
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all font-medium text-slate-700 bg-white shadow-sm flex items-center";
+                btn.onclick = () => selectOption(index, btn);
+                
+                // Letras A, B, C, D
+                const letter = String.fromCharCode(65 + index);
+                btn.innerHTML = `<span class="inline-flex justify-center items-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 mr-3 font-bold text-sm">${letter}</span> <span>${opt}</span>`;
+                
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, buttonElement) {
+            // Deshabilitar botones
+            const buttons = optionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:border-indigo-400', 'hover:bg-indigo-50');
+                btn.classList.add('opacity-70', 'cursor-not-allowed');
+            });
+
+            const q = questions[currentQuestion];
+            feedbackContainer.classList.remove('hidden');
+            feedbackContainer.classList.remove('bg-green-100', 'text-green-800', 'border-green-300', 'bg-red-100', 'text-red-800', 'border-red-300', 'fade-in');
+            void feedbackContainer.offsetWidth; // trigger reflow
+            feedbackContainer.classList.add('fade-in', 'border', 'border-l-4');
+
+            if (selectedIndex === q.correct) {
+                // Respuesta Correcta
+                score++;
+                buttonElement.classList.remove('border-slate-200', 'opacity-70');
+                buttonElement.classList.add('border-green-500', 'bg-green-50', 'correct-anim', 'opacity-100');
+                
+                // Marcar letra en verde
+                const span = buttonElement.querySelector('span');
+                span.classList.remove('bg-slate-100', 'text-slate-600');
+                span.classList.add('bg-green-500', 'text-white');
+
+                feedbackContainer.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
+                feedbackContainer.innerHTML = `<div class="flex items-start"><span class="text-xl mr-2">✅</span> <div><p class="font-bold mb-1">¡Correcto!</p><p>${q.correctMsg}</p></div></div>`;
+            } else {
+                // Respuesta Incorrecta
+                buttonElement.classList.remove('border-slate-200', 'opacity-70');
+                buttonElement.classList.add('border-red-500', 'bg-red-50', 'wrong-anim', 'opacity-100');
+                
+                // Marcar letra en rojo
+                const span = buttonElement.querySelector('span');
+                span.classList.remove('bg-slate-100', 'text-slate-600');
+                span.classList.add('bg-red-500', 'text-white');
+
+                // Resaltar la que era correcta
+                const correctBtn = buttons[q.correct];
+                correctBtn.classList.remove('opacity-70');
+                correctBtn.classList.add('border-green-500', 'border-dashed', 'opacity-100');
+
+                feedbackContainer.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
+                feedbackContainer.innerHTML = `<div class="flex items-start"><span class="text-xl mr-2">❌</span> <div><p class="font-bold mb-1">Respuesta Incorrecta</p><p>${q.wrongMsg}</p></div></div>`;
+            }
+
+            // Mostrar botón siguiente o finalizar
+            if (currentQuestion < questions.length - 1) {
+                nextBtn.classList.remove('hidden');
+            } else {
+                finishBtn.classList.remove('hidden');
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            loadQuestion();
+        }
+
+        function endQuiz() {
+            clearInterval(timerInterval);
+            quizScreen.classList.add('hidden');
+            quizScreen.classList.remove('flex');
+            resultScreen.classList.remove('hidden');
+
+            document.getElementById('student-greeting').textContent = `Buen trabajo, ${studentName}.`;
+            document.getElementById('final-score').textContent = score;
+
+            const scoreMessage = document.getElementById('score-message');
+            const percentage = (score / questions.length) * 100;
+            
+            if (percentage === 100) {
+                scoreMessage.textContent = "¡Sobresaliente! Tienes un dominio total del cableado estructurado.";
+                scoreMessage.className = "font-bold text-green-600 mt-2";
+            } else if (percentage >= 70) {
+                scoreMessage.textContent = "Aprobaste. Tienes buenos conocimientos fundamentales.";
+                scoreMessage.className = "font-medium text-indigo-600 mt-2";
+            } else {
+                scoreMessage.textContent = "Debes repasar las normas y componentes del Módulo 3.";
+                scoreMessage.className = "font-medium text-orange-600 mt-2";
+            }
+        }
+
+        function sendToWhatsApp() {
+            const numWsp = "573202641496";
+            const porcentaje = Math.round((score / questions.length) * 100);
+            const emoji = porcentaje >= 70 ? "✅" : "⚠️";
+            
+            const mensaje = `Hola profe Julián David Burgos. Soy el estudiante *${studentName}*.\n\nAcabo de finalizar la Evaluación del Módulo 3 (Redes I).\n\nMi resultado fue:\n*${score} respuestas correctas de ${questions.length}* ${emoji}\n*Puntaje: ${porcentaje}%*.\n\n¡Quedo atento, gracias!`;
+            
+            const encodedText = encodeURIComponent(mensaje);
+            window.open(`https://wa.me/${numWsp}?text=${encodedText}`, '_blank');
+        }
+    </script>
+</body>
+</html>
